@@ -1,3 +1,4 @@
+
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 
@@ -24,23 +25,38 @@ export interface User {
         bs: string;
     }
 }
+
+export interface Album {
+    userId: number;
+    id: number;
+    title: string;
+}
+
+
 interface UserState {
     // Below is an array of User objects that are type defined.
     data: User[];
     status: 'idle' | 'loading' | 'succeeded' | 'failed';
     error: string | null;
+    usersAlbums: Album[];
 }
 
 const initialState: UserState = {
     data: [],
     status: 'idle',
     error: null,
+    usersAlbums: [],
 }
 
 export const getUsers = createAsyncThunk('users/getUsers', async () => {
     const response = await axios.get<User[]>('https://jsonplaceholder.typicode.com/users');
     return response.data;
-})
+});
+
+export const getUserAlbums = createAsyncThunk('users/getUserAlbums', async (userId: number) => {
+    const response = await axios.get<Album[]>(`https://jsonplaceholder.typicode.com/users/${userId}/albums`);
+    return response.data;
+});
 
 
 const usersSlice = createSlice({
@@ -59,6 +75,17 @@ const usersSlice = createSlice({
             .addCase(getUsers.fulfilled, (state, action) => {
                 state.status = 'succeeded';
                 state.data = action.payload;
+            })
+            .addCase(getUserAlbums.pending, (state) => {
+                state.status = "loading";
+            })
+            .addCase(getUserAlbums.fulfilled, (state, action) => {
+                state.status = "succeeded";
+                state.usersAlbums = action.payload;
+            })
+            .addCase(getUserAlbums.rejected, (state, action) => {
+                state.status = "failed";
+                state.error = action.error.message ?? "Something went wrong.";
             })
     },
 });
